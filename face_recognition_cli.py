@@ -62,9 +62,6 @@ def add_data(main_folder, *image_files):
         
     # Sort the folder names in ascending order
     sorted_folders = sorted(folders)
-    print(folders)
-    print(sorted_folders)
-    input()
 
     # Rename each folder in ascending order
     for i, folder_name in enumerate(sorted_folders):
