@@ -7,7 +7,6 @@ This Attendance System is built using face recognition technology. It can recogn
 - OpenCV
 - dlib
 - face_recognition
-- numpy
 
 ## Installation
 1. Install Python 3.x on your computer.

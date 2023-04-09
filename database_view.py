@@ -45,4 +45,3 @@ def main():
     # Close the cursor and connection
     cursor.close()
     conn.close()
-    input()

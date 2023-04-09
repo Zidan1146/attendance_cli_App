@@ -2,45 +2,51 @@ import os
 import face_recognition
 import json
 import shutil
+from attendance_constants import *
 
-def add_data(main_folder, *image_files):
-    # Set the path to the main folder
-    data_path = 'Faces'
 
-    # Create the subfolder if there are image files
-    if len(image_files) > 0:
-        subfolder_path = os.path.join(data_path, main_folder)
+def create_subfolder(main_folder, is_file_mode):
+    subfolder_path = os.path.join(DATA_FOLDER, main_folder)
+
+    if not os.path.exists(subfolder_path) and is_file_mode:
         os.mkdir(subfolder_path)
 
-        # Copy and rename each image file
-        for i, image_file in enumerate(image_files):
-            try:
-                file_ext = os.path.splitext(image_file)[1]
-                shutil.copy(image_file, subfolder_path)
-            except FileNotFoundError:
-                os.rmdir(subfolder_path)
-                print(f'Could not copy {image_file} to {subfolder_path} because it does not exist.')
-                print(f'{subfolder_path} deleted')
-                input()
-                return
-            os.rename(image_file, f'{subfolder_path}_{i:02d}{file_ext}')
+    return subfolder_path
 
-    # If there are no image files, copy the entire folder
-    elif len(image_files) == 0:
-        subfolder_path = os.path.join(data_path, main_folder)
-        shutil.copytree(main_folder, subfolder_path)
-        files = os.listdir(os.path.join(data_path, main_folder))
-        
-        for index, file in enumerate(files):
-            file_ext = os.path.splitext(file)[1]
-            old_file_path = os.path.join(subfolder_path, file)
-            new_file_name = f'{main_folder}_{index + 1:02d}{file_ext}'
-            new_file_path = os.path.join(subfolder_path, new_file_name)
-            os.rename(old_file_path, new_file_path)
+def copy_and_rename_file(image_file, subfolder_path, main_folder, index):
+    try:
+        file_ext = os.path.splitext(image_file)[1]
 
+        if file_ext.lower() not in ['.jpg', '.jpeg', '.png']:
+            return
 
+        shutil.copy(image_file, subfolder_path)
+
+        new_file_name = f'{main_folder}_{index:02d}{file_ext}'
+        new_file_path = os.path.join(subfolder_path, new_file_name)
+        os.rename(os.path.join(subfolder_path, os.path.basename(image_file)), new_file_path)
+
+    except FileNotFoundError:
+        print(f'Could not copy {image_file} to {subfolder_path} because it does not exist.')
+
+def copy_folder(main_folder, subfolder_path):
+    shutil.copytree(main_folder, subfolder_path)
+
+    for i, file_name in enumerate(os.listdir(subfolder_path)):
+        old_file_path = os.path.join(subfolder_path, file_name)
+
+        if not file_name.lower().endswith(('.jpg', '.jpeg', '.png')):
+            os.remove(old_file_path)
+            continue
+
+        file_ext = os.path.splitext(file_name)[1]
+        new_file_name = f'{main_folder}_{i + 1:02d}{file_ext}'
+        new_file_path = os.path.join(subfolder_path, new_file_name)
+        os.rename(old_file_path, new_file_path)
+
+def sort_subfolders(subfolder_path):
     # Get a list of folders in the directory
-    folders = os.listdir(data_path)
+    folders = os.listdir(DATA_FOLDER)
 
     folder_to_remove = []
     
@@ -48,79 +54,147 @@ def add_data(main_folder, *image_files):
         for folder in folders:
             prefix, sep, suffix = folder.partition("_")
             if prefix.isdigit():
-                os.rename(os.path.join(data_path, folder), os.path.join(data_path, suffix))
+                os.rename(os.path.join(DATA_FOLDER, folder), os.path.join(DATA_FOLDER, suffix))
                 folder_to_remove.append(folder)
                 folders.append(suffix)
     except OSError:
-        shutil.rmtree(subfolder_path)
+        shutil.rmtree(os.path.join(DATA_FOLDER,folder.split("_")[1]))
+        os.rename(os.path.join(DATA_FOLDER, folder), os.path.join(DATA_FOLDER, suffix))
+        folder_to_remove.append(folder)
         print(f'Cannot copy directory, directory exists: {subfolder_path}')
         input()
-        return
     
     for item in folder_to_remove:
         folders.remove(item)
-        
+    
     # Sort the folder names in ascending order
     sorted_folders = sorted(folders)
 
-    # Rename each folder in ascending order
-    for i, folder_name in enumerate(sorted_folders):
-        # Split the folder name into prefix and suffix
-        prefix, sep, suffix = folder_name.partition("_")
+    for i, subfolder_name in enumerate(sorted_folders):
+        old_subfolder_path = os.path.join(DATA_FOLDER, subfolder_name)
+        prefix, sep, suffix = subfolder_name.partition('_')
+        new_subfolder_name = f'{i + 1:02d}_{subfolder_name}'
+        new_subfolder_path = os.path.join(DATA_FOLDER, new_subfolder_name)
+        os.rename(old_subfolder_path, new_subfolder_path)
 
-        # Check if the prefix is a number
-        if prefix.isdigit():
-            folder = folder_name.split('_')[1]
-            # Increment the prefix and format it with leading zeros
-            new_prefix = f"{i + 1:02d}_{folder}"
-        else:
-            # If the prefix is not a number, use 01 as the new prefix
-            new_prefix = f"{i + 1:02d}_{folder_name}"
+def add_file_data(main_folder, *image_files):
+    subfolder_path = create_subfolder(main_folder, True)
 
-        # Create the new folder name by concatenating the new prefix and the suffix
-        new_folder_name = new_prefix
+    for i, image_file in enumerate(image_files):
+        copy_and_rename_file(image_file, subfolder_path, main_folder, i)
 
-        # Get the full path of the folder to rename
-        folder_to_rename = os.path.join(data_path, folder_name)
-
-        # Get the full path of the new folder name
-        new_folder_path = os.path.join(data_path, new_folder_name)
-
-        # Rename the folder
-        os.rename(folder_to_rename, new_folder_path)
+    sort_subfolders(main_folder)
 
     load_data()
 
-def load_data():
-    known_faces_folder = 'Faces'
+def add_folder_data(*folders):
+    for folder in folders:
+        subfolder_path = create_subfolder(folder, False)
+        try:
+            copy_folder(folder, subfolder_path)
+        except Exception as e:
+            print(f"Error copying folder '{folder}': {e}")
+            return
+
+        sort_subfolders(folder)
+    
+    if SETTINGS['load_after_add']:
+        load_data()
+
+
+def load_dataset_from_json():
     dataset = []
-    known_faces_file = 'json/known_faces.json'
-    folder = known_faces_file.split('/')[0]
+
+    # Create the JSON folder if it doesn't exist
+    if not os.path.exists(JSON_FOLDER):
+        os.mkdir(JSON_FOLDER)
+
+    # Load the JSON data if it exists and has 'encoding' attribute
+    if os.path.isfile(KNOWN_FACE_PATH):
+        with open(KNOWN_FACE_PATH, 'r') as f:
+            data = json.load(f)
+            if isinstance(data, list) and len(data) > 0 and 'encoding' in data[0]:
+                dataset = data
+
+    return dataset
+
+
+def load_images(dataset):
+    total_image = sum(len(files) for root, dirs, files in os.walk(DATA_FOLDER))
+    image_processed = 0
     
-    if os.path.isfile(known_faces_file) and 'encoding' in known_faces_file:
-        with open(known_faces_file, 'r') as f:
-            dataset = json.load(f)
-    elif not os.path.exists(folder):
-        os.mkdir(folder)
-    
-    for root, dirs, files in os.walk(known_faces_folder):
-        for i, file in enumerate(files):
-            print(f'Loading image {file}... ({i + 1}/{len(files)})')
-            if file.endswith('.jpg') or file.endswith('.jpeg') or file.endswith('.png'):
+    for root, dirs, files in os.walk(DATA_FOLDER):
+        for file in files:
+            image_processed = image_processed + 1
+            print(f'Loading image {file}... ({image_processed}/{total_image})')
+            if file.endswith(('.jpg', '.jpeg', '.png')):
                 image_path = os.path.join(root, file)
-                image = face_recognition.load_image_file(image_path)
-                encoding = face_recognition.face_encodings(image)[0]
-                name = os.path.dirname(image_path.split('_')[1]).split(os.sep)[-1]
-                id = int(os.path.dirname(image_path).split(os.sep)[-1].split('_')[0])
-                dataset.append({
-                    'id': id,
-                    'image_path': image_path,
-                    'name': name,
-                    'encoding': encoding.tolist()
-                })
-    
-    with open(known_faces_file, 'w') as f:
+                # Check if image with the same path already exists in the dataset
+                if any(image['image_path'] == image_path for image in dataset):
+                    print(f'{file} already exists in the dataset. Skipping...')
+                    continue
+                try:
+                    image = face_recognition.load_image_file(image_path)
+                    encoding = face_recognition.face_encodings(image)[0]
+                    name = os.path.basename(os.path.dirname(image_path).split("_")[1])
+                    id = int(os.path.basename(os.path.dirname(image_path).split("_")[0]))
+                    dataset.append({
+                        'id': id,
+                        'image_path': image_path,
+                        'name': name,
+                        'encoding': encoding.tolist()
+                    })
+                except (IndexError, ValueError):
+                    # If the face encoding cannot be computed, remove the invalid image
+                    print(f'Could not compute encoding for {file}. Removing image...')
+                    os.remove(image_path)
+                    continue
+            else:
+                # If the file is not an image, remove it
+                invalid_file_path = os.path.join(root, file)
+                os.remove(invalid_file_path)
+
+    # Sort the dataset by ID
+    dataset = sorted(dataset, key=lambda x: int(x['id']))
+
+    return dataset
+
+
+def save_dataset_to_json(dataset):
+    # Save the dataset to JSON
+    with open(KNOWN_FACE_PATH, 'w') as f:
         json.dump(dataset, f, indent=4)
+
+    print('All images loaded!')
+
+
+def load_data():
+    dataset = load_dataset_from_json()
+    dataset = load_images(dataset)
+    save_dataset_to_json(dataset)
+
+
+def configuration(config, value):
+    settings = SETTINGS
     
-    print('All image Loaded!')
-    input()
+    if os.path.exists(SETTINGS_JSON_PATH):
+        with open(SETTINGS_JSON_PATH, 'r') as f:
+            settings = json.load(f)
+    elif not os.path.exists(JSON_FOLDER):
+        os.mkdir(JSON_FOLDER)
+    
+    if config == 'time_in':
+        hours = value // 3600
+        minutes = (value % 3600) // 60
+        seconds = value % 60
+        
+        settings[f'{config}_hours'] = hours
+        settings[f'{config}_minutes'] = minutes
+        settings[f'{config}_seconds'] = seconds
+    else:
+        settings[config] = value
+    
+    with open(SETTINGS_JSON_PATH, 'w') as f:
+        json.dump(settings, f, indent=4)
+    
+    print(f'Configured {config}')

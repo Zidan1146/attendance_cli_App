@@ -1,48 +1,73 @@
-import face_recognition_attendance  # importing a module for attendance tracking
-import face_recognition_cli  # importing a module for face recognition
-import database_view  # importing a module for viewing attendance data
-import os  # importing a module for interacting with the operating system
-import sys  # importing a module for accessing system-specific parameters and functions
+import argparse
+import os
+
+from face_recognition_attendance import main as start_attendance
+from face_recognition_cli import add_file_data, add_folder_data,load_data, configuration
+from database_view import main as view_attendance
+
+
+def start_mode(args):
+    """Starts the attendance process."""
+    start_attendance()
+
+
+def add_mode(args):
+    """Adds new face data."""
+    if args.input_type == 'file':
+        add_file_data(args.folder_name, *args.files)
+    elif args.input_type == 'folder':
+        args.input_data.append(args.data_folder)
+        add_folder_data(*args.input_data)
+
+
+def settings_mode(args):
+    """Set the configuration"""
+    # TODO: add function to configure settings
+    if args.config != 'time_in':
+        args.value = bool(args.value)
+    
+    configuration(args.config, args.value)
+
+
+def load_mode(args):
+    """Loads existing face data for attendance tracking."""
+    load_data()
+
+
+def view_mode(args):
+    """Shows attendance data."""
+    view_attendance()
+
 
 def main():
-    files = []  # creating an empty list to hold file names
-    
-    # checking the number of command line arguments
-    if len(sys.argv) == 2:
-        mode = str(sys.argv[1])  # if there's one argument, it's the mode
-    elif len(sys.argv) == 3:
-        mode = str(sys.argv[1])  # if there are two arguments, the first is the mode, and the second is the folder name
-        if mode == 'add':  # if the mode is "add"
-            folder_name = str(sys.argv[2])  # the third argument is the folder name
-    elif len(sys.argv) > 3:
-        mode = str(sys.argv[1])  # if there are more than two arguments, the first is the mode, the second is the folder name, and the rest are files
-        if mode == 'add':  # if the mode is "add"
-            folder_name = str(sys.argv[2])  # the third argument is the folder name
-            for i in range(3, len(sys.argv)):
-                files.append(sys.argv[i])  # the rest of the arguments are file names, so add them to the list
-    else:
-        mode = 'help'  # if there are no arguments or an invalid number, default to "help"
-        
-    mode = mode.lower()  # convert the mode to lowercase
-    
-    # check the mode and call the appropriate function
-    if mode == 'start':
-        face_recognition_attendance.main()  # call the function to start attendance tracking
-    elif mode == 'add':
-        face_recognition_cli.add_data(folder_name, *files)  # call the function to add new face data
-    elif mode == 'load':
-        face_recognition_cli.load_data()  # call the function to load existing face data
-    elif mode == 'view':
-        database_view.main()  # call the function to view attendance data
-    elif mode == 'help':
-        # if the mode is "help", print a list of available commands
-        print('Available commands')
-        print('"start" : starts the attendance process.')
-        print('"add [folder name] [file names...]" : adds a new folder with the specified name to the image data directory and adds the provided files to that folder.')
-        print('"add [folder name] : add the copy of the provided folder to the image data directory')
-        print('"load" : loads existing face data for attendance tracking.')
-        print('"view" : shows attendance data.')
-        print('"help" : displays a list of available commands.')
+    """Parse command line arguments and call the appropriate function."""
+    parser = argparse.ArgumentParser(description='Attendance tracking with face recognition.')
+    subparsers = parser.add_subparsers(dest='mode', help='Available commands')
+
+    start_parser = subparsers.add_parser('start', help='Start the attendance process.')
+    start_parser.set_defaults(func=start_mode)
+
+    add_parser = subparsers.add_parser('add', help='Add new face data to the program.')
+    add_parser.add_argument('input_type', help='Specify whether the input is a single file or a folder containing multiple files.', choices=['file', 'folder'])
+    add_parser.add_argument('data_folder', help='Name of the folder containing face images.')
+    add_parser.add_argument('input_data', nargs='*', help='List of file or folder names of face images to add.')
+    add_parser.set_defaults(func=add_mode)
+
+    settings_parser = subparsers.add_parser('set', help='Set a configuration parameter.')
+    settings_parser.add_argument('config', help='Configuration type', choices=['time_in', 'capture_mode', 'load_after_add'])
+    settings_parser.add_argument('value', help='Configuration value', type=int)
+    settings_parser.set_defaults(func=settings_mode)
+
+    subparsers.add_parser('load', help='Load existing face data for attendance tracking.').set_defaults(func=load_mode)
+    subparsers.add_parser('view', help='Show attendance data.').set_defaults(func=view_mode)    
+
+    args = parser.parse_args()
+
+    try:
+        args.func(args)
+    except AttributeError:
+        parser.print_help()
+
 
 if __name__ == '__main__':
-    main()  # call the main function if the script is run directly
+    main()
