@@ -60,6 +60,16 @@ def process_frame(frame, known_faces_encodings, known_names, known_id, id_times_
     return frame
 
 
+def load_id_times_dict(cursor, known_names):
+    id_times_dict = {}
+    for name in known_names:
+        cursor.execute(EXTRACT_TIME, (name, ))
+        value = cursor.fetchone()
+        if value is not None:
+            id_times_dict[name] = value[0]
+    return id_times_dict
+
+
 def main():
     if not os.path.exists(DATABASE_FOLDER):
         os.mkdir(DATABASE_FOLDER)
@@ -69,12 +79,7 @@ def main():
 
     create_database(cursor)
     known_faces_encodings, known_names, known_id = load_known_faces()
-    id_times_dict = {}
-    for name in known_names:
-        cursor.execute(EXTRACT_TIME, (name, ))
-        value = cursor.fetchone()
-        if value is not None:
-            id_times_dict[name] = value[0]
+    id_times_dict = load_id_times_dict(cursor, known_names)
     
     capture = cv2.VideoCapture(0)
 
@@ -92,4 +97,3 @@ def main():
 
     capture.release()
     cv2.destroyAllWindows()
-

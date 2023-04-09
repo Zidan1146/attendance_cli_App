@@ -84,8 +84,9 @@ def add_file_data(main_folder, *image_files):
         copy_and_rename_file(image_file, subfolder_path, main_folder, i)
 
     sort_subfolders(main_folder)
-
-    load_data()
+    
+    if SETTINGS['load_after_add']:
+        load_data()
 
 def add_folder_data(*folders):
     for folder in folders:
