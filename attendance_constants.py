@@ -25,7 +25,8 @@ DATABASE_FOLDER = f'{STORAGE_FOLDER}/database'
 ATTENDANCE_DB = f'{DATABASE_FOLDER}/attendance.db'
 CURRENT_DATE = f'attendance_at_{datetime.now().strftime("%Y_%m_%d")}'
 
-DATA_FOLDER = f'{STORAGE_FOLDER}/Faces'
+DATA_FOLDER = f'{STORAGE_FOLDER}/Faces_Data'
+SAVED_IMAGE_FOLDER = f'{STORAGE_FOLDER}/captured_images'
 
 # Database Queries
 TOLERANCE = 0.5
@@ -38,6 +39,15 @@ WHERE id NOT IN (
 );'''
 EXTRACT_TIME = f'SELECT time FROM {CURRENT_DATE} WHERE name = ?'
 
-# Storage folder
+# Create some folders if they don't exist
 if not os.path.exists(STORAGE_FOLDER):
     os.mkdir(STORAGE_FOLDER)
+
+if not os.path.exists(SAVED_IMAGE_FOLDER):
+    os.mkdir(SAVED_IMAGE_FOLDER)
+
+if not os.path.exists(JSON_FOLDER):
+    os.mkdir(JSON_FOLDER)
+
+if not os.path.exists(DATABASE_FOLDER):
+    os.mkdir(DATABASE_FOLDER)

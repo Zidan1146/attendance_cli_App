@@ -106,10 +106,6 @@ def add_folder_data(*folders):
 def load_dataset_from_json():
     dataset = []
 
-    # Create the JSON folder if it doesn't exist
-    if not os.path.exists(JSON_FOLDER):
-        os.mkdir(JSON_FOLDER)
-
     # Load the JSON data if it exists and has 'encoding' attribute
     if os.path.isfile(KNOWN_FACE_PATH):
         with open(KNOWN_FACE_PATH, 'r') as f:
@@ -137,8 +133,8 @@ def load_images(dataset):
                 try:
                     image = face_recognition.load_image_file(image_path)
                     encoding = face_recognition.face_encodings(image)[0]
-                    name = os.path.basename(os.path.dirname(image_path).split("_")[1])
-                    id = int(os.path.basename(os.path.dirname(image_path).split("_")[0]))
+                    name = os.path.basename(os.path.dirname(image_path).split("_")[2])
+                    id = int(os.path.basename(os.path.dirname(image_path).split("_")[1]))
                     dataset.append({
                         'id': id,
                         'image_path': image_path,
@@ -181,9 +177,7 @@ def configuration(config, value):
     if os.path.exists(SETTINGS_JSON_PATH):
         with open(SETTINGS_JSON_PATH, 'r') as f:
             settings = json.load(f)
-    elif not os.path.exists(JSON_FOLDER):
-        os.mkdir(JSON_FOLDER)
-    
+
     if config == 'time_in':
         hours = value // 3600
         minutes = (value % 3600) // 60
