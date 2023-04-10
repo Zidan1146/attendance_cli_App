@@ -52,7 +52,7 @@ def process_frame(frame, known_faces_encodings, known_names, known_id, id_times_
                 cursor.execute(DELETE_COPY)
                 conn.commit()
                 if SETTINGS['capture_mode']:
-                    cv2.imwrite(f'{SAVED_IMAGE_FOLDER}/{name}_at_{datetime.now().strftime("%Y_%m_%d")}.jpg', frame)
+                    cv2.imwrite(f'{SAVED_IMAGE_FOLDER}/{name}.jpg', frame)
 
         top, right, bottom, left = face_location
         cv2.rectangle(frame, (left, top), (right, bottom), (0, 255, 0), 2)

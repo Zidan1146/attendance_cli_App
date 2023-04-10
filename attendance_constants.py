@@ -26,7 +26,7 @@ ATTENDANCE_DB = f'{DATABASE_FOLDER}/attendance.db'
 CURRENT_DATE = f'attendance_at_{datetime.now().strftime("%Y_%m_%d")}'
 
 DATA_FOLDER = f'{STORAGE_FOLDER}/Faces_Data'
-SAVED_IMAGE_FOLDER = f'{STORAGE_FOLDER}/captured_images'
+SAVED_IMAGE_FOLDER = f'{STORAGE_FOLDER}/captured_images/{datetime.now().strftime("%Y_%m_%d")}'
 
 # Database Queries
 TOLERANCE = 0.5
